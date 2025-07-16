@@ -35,7 +35,7 @@ pause() {
 
 prompt_pasv_ports() {
     echo
-    echo -e "${YELLOW}[Passive Ports Configuration]${RESET}"
+    echo -e "${YELLOW}[Passive Ports Configuration] [Ctrl+C to cancel]${RESET}"
     read -rp "Enter PASV minimum port [default: 50000]: " input_min
     read -rp "Enter PASV maximum port [default: 50010]: " input_max
 
@@ -61,6 +61,7 @@ prompt_nonempty() {
 
 prompt_shell() {
     local SHELL_PATH=""
+    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}"
     while true; do
         read -rp "Enter shell for user [default: /bin/false]: " SHELL_PATH
         SHELL_PATH=${SHELL_PATH:-/bin/false}
