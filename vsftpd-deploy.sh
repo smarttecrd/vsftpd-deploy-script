@@ -59,6 +59,32 @@ prompt_nonempty() {
     done
 }
 
+prompt_shell() {
+    local SHELL_PATH=""
+    while true; do
+        read -rp "Enter shell for user [default: /bin/false]: " SHELL_PATH
+        SHELL_PATH=${SHELL_PATH:-/bin/false}
+        
+        if grep -q "^$SHELL_PATH$" /etc/shells; then
+            echo -e "${GREEN}Shell set to: $SHELL_PATH${RESET}"
+            echo "$SHELL_PATH"
+            return 0
+        else
+            echo -e "${YELLOW}Shell '$SHELL_PATH' is not registered in /etc/shells.${RESET}"
+            read -rp "Do you want to add it to /etc/shells? [y/N]: " ADD_SHELL
+            
+            if [[ "$ADD_SHELL" =~ ^[Yy]$ ]]; then
+                echo "$SHELL_PATH" >> /etc/shells
+                echo -e "${GREEN}Shell '$SHELL_PATH' added to /etc/shells successfully.${RESET}"
+                echo "$SHELL_PATH"
+                return 0
+            else
+                echo -e "${YELLOW}Please enter a different shell path or press Enter for default.${RESET}"
+            fi
+        fi
+    done
+}
+
 install_vsftpd() {
     if dpkg -l | grep -qw vsftpd; then
         echo -e "${YELLOW}vsftpd is already installed. Skipping installation.${RESET}"
@@ -90,6 +116,11 @@ userlist_file=/etc/vsftpd.userlist
 userlist_deny=NO
 pasv_min_port=$PASV_MIN_PORT
 pasv_max_port=$PASV_MAX_PORT
+xferlog_enable=YES
+xferlog_file=/var/log/vsftpd.log
+xferlog_std_format=YES
+log_ftp_protocol=YES
+dual_log_enable=YES
 EOF
 
     touch /etc/vsftpd.userlist
@@ -119,12 +150,15 @@ add_ftp_user() {
         echo -e "${YELLOW}User '$USERNAME' already exists.${RESET}"
     else
         PASSWORD=$(prompt_nonempty "Enter password for user '$USERNAME': ")
+        
+        echo
+        SHELL=$(prompt_shell)
 
         mkdir -p /srv/ftp/"$USERNAME"
 
         useradd -m \
             -d /srv/ftp/"$USERNAME" \
-            -s /usr/sbin/nologin \
+            -s "$SHELL" \
             -g ftp \
             -G www-data \
             "$USERNAME"
@@ -200,7 +234,9 @@ show_menu() {
                 mount_bind_folder
                 ;;
             4)
-                echo "Goodbye."
+                # Final message
+                echo -e "\n--- Made with love from the Dominican Republic by SmartTec ---"
+                echo "Visit us at https://smarttec.com.do"
                 exit 0
                 ;;
             *)
