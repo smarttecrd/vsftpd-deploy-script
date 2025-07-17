@@ -8,6 +8,7 @@ This is an interactive Bash script for automated installation, configuration, an
 
 - **Automated vsftpd Installation**: Installs and configures vsftpd with secure defaults
 - **Custom Passive Port Configuration**: Configure passive mode port ranges for firewall compatibility
+- **Secure Password Generation**: Automatically generates 18-character secure passwords using `pwgen`
 - **Secure User Management**: Creates FTP users with proper shell validation and `/etc/shells` management
 - **Advanced Shell Validation**: Validates shells against `/etc/shells` and offers to register new ones
 - **Directory Binding**: Mount/bind external folders into user FTP directories
@@ -23,6 +24,7 @@ This is an interactive Bash script for automated installation, configuration, an
 - Root privileges
 - `bash`
 - Internet connection for package installation
+- `pwgen` (automatically installed with vsftpd)
 
 ---
 
@@ -45,12 +47,14 @@ The script provides an interactive menu with the following options:
 
 1. **Setup and Configure vsftpd**
    - Installs vsftpd package
+   - Installs pwgen package
    - Configures secure defaults
    - Sets up passive port ranges
    - Creates necessary directories and permissions
 
 2. **Add FTP User**
    - Creates new FTP users with secure defaults
+   - Generates secure 18-character passwords automatically
    - Validates and manages user shells
    - Automatically adds users to vsftpd userlist
    - Sets proper directory permissions
@@ -86,6 +90,7 @@ The script configures vsftpd with these secure settings:
 - **Primary group**: `ftp`
 - **Secondary group**: `www-data`
 - **Directory permissions**: `750` (owner read/write/execute, group read/execute)
+- **Password generation**: Secure 18-character passwords using `pwgen` with uppercase, lowercase, numbers, and symbols
 
 ### Shell Validation
 
@@ -95,6 +100,15 @@ The script includes advanced shell validation that:
 - Supports custom shells while maintaining security
 - Defaults to `/bin/false` for maximum security
 
+### Password Security
+
+The script automatically generates secure passwords with the following characteristics:
+- **Length**: 18 characters
+- **Complexity**: Includes uppercase letters, lowercase letters, numbers, and special symbols
+- **Tool**: Uses `pwgen` for cryptographically secure generation
+- **Flexibility**: Users can accept generated password or provide their own
+- **Fallback**: Manual password entry if `pwgen` is not available
+
 ---
 
 ## 🔐 Security Features
@@ -102,6 +116,7 @@ The script includes advanced shell validation that:
 - **Chroot Environment**: Users cannot access files outside their home directory
 - **Shell Validation**: Ensures only valid shells are used
 - **Secure Defaults**: Uses `/bin/false` shell to prevent local login
+- **Strong Password Generation**: Automatically generates 18-character secure passwords
 - **Permission Management**: Proper file and directory permissions
 - **User Isolation**: Each FTP user has isolated environment
 - **Logging**: Comprehensive activity logging for security monitoring
@@ -160,6 +175,7 @@ sudo ./vsftpd-deploy.sh
 2. **Port Conflicts**: Check if configured passive ports are available
 3. **Firewall Blocking**: Ensure FTP ports are open in your firewall
 4. **Mount Issues**: Verify source directories exist before binding
+5. **Password Generation**: If `pwgen` is not available, install vsftpd first or enter passwords manually
 
 ### Logs
 
