@@ -59,6 +59,50 @@ prompt_nonempty() {
     done
 }
 
+generate_password() {
+    # Generate a secure 18-character password using pwgen
+    if command -v pwgen >/dev/null 2>&1; then
+        pwgen -s -y -1 18
+    else
+        echo ""  # Return empty if pwgen is not available
+    fi
+}
+
+prompt_password() {
+    local USERNAME="$1"
+    local generated_password=""
+    
+    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}"
+    
+    generated_password=$(generate_password)
+    
+    if [ -n "$generated_password" ]; then
+        echo -e "${GREEN}Generated secure password: ${generated_password}${RESET}"
+        echo
+        PROMPT_TEXT="Enter password for user '$USERNAME' [press Enter to use generated]: "
+    else
+        echo -e "${YELLOW}pwgen is not available. Please enter password manually.${RESET}"
+        echo
+        PROMPT_TEXT="Enter password for user '$USERNAME': "
+    fi
+    
+    while true; do
+        read -rp "$PROMPT_TEXT" PASSWORD
+        
+        if [ -z "$PASSWORD" ] && [ -n "$generated_password" ]; then
+            PASSWORD="$generated_password"
+            echo -e "${GREEN}Using generated password.${RESET}"
+            echo "$PASSWORD"
+            return 0
+        elif [ -n "$PASSWORD" ]; then
+            echo "$PASSWORD"
+            return 0
+        else
+            echo -e "${RED}Password cannot be empty. Press [Ctrl+C] to cancel.${RESET}"
+        fi
+    done
+}
+
 prompt_shell() {
     local SHELL_PATH=""
     echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}"
@@ -90,9 +134,9 @@ install_vsftpd() {
     if dpkg -l | grep -qw vsftpd; then
         echo -e "${YELLOW}vsftpd is already installed. Skipping installation.${RESET}"
     else
-        echo -e "${GREEN}Installing vsftpd...${RESET}"
+        echo -e "${GREEN}Installing vsftpd and pwgen...${RESET}"
         apt update
-        apt install -y vsftpd
+        apt install -y vsftpd pwgen
     fi
 
     if [ ! -f /etc/vsftpd.conf.bak ]; then
@@ -150,7 +194,7 @@ add_ftp_user() {
     if id "$USERNAME" &>/dev/null; then
         echo -e "${YELLOW}User '$USERNAME' already exists.${RESET}"
     else
-        PASSWORD=$(prompt_nonempty "Enter password for user '$USERNAME': ")
+        PASSWORD=$(prompt_password "$USERNAME")
         
         echo
         SHELL=$(prompt_shell)
