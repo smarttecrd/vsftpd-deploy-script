@@ -51,7 +51,7 @@ prompt_nonempty() {
     while true; do
         read -rp "$PROMPT" RESULT
         if [ -n "$RESULT" ]; then
-            echo "$RESULT"
+            printf "%s" "$RESULT"
             return 0
         else
             echo -e "${RED}This field cannot be empty. Press [Ctrl+C] to cancel.${RESET}"
@@ -92,10 +92,10 @@ prompt_password() {
         if [ -z "$PASSWORD" ] && [ -n "$generated_password" ]; then
             PASSWORD="$generated_password"
             echo -e "${GREEN}Using generated password.${RESET}"
-            echo "$PASSWORD"
+            printf "%s" "$PASSWORD"
             return 0
         elif [ -n "$PASSWORD" ]; then
-            echo "$PASSWORD"
+            printf "%s" "$PASSWORD"
             return 0
         else
             echo -e "${RED}Password cannot be empty. Press [Ctrl+C] to cancel.${RESET}"
@@ -112,7 +112,7 @@ prompt_shell() {
         
         if grep -q "^$SHELL_PATH$" /etc/shells; then
             echo -e "${GREEN}Shell set to: $SHELL_PATH${RESET}"
-            echo "$SHELL_PATH"
+            printf "%s" "$SHELL_PATH"
             return 0
         else
             echo -e "${YELLOW}Shell '$SHELL_PATH' is not registered in /etc/shells.${RESET}"
@@ -121,7 +121,7 @@ prompt_shell() {
             if [[ "$ADD_SHELL" =~ ^[Yy]$ ]]; then
                 echo "$SHELL_PATH" >> /etc/shells
                 echo -e "${GREEN}Shell '$SHELL_PATH' added to /etc/shells successfully.${RESET}"
-                echo "$SHELL_PATH"
+                printf "%s" "$SHELL_PATH"
                 return 0
             else
                 echo -e "${YELLOW}Please enter a different shell path or press Enter for default.${RESET}"
