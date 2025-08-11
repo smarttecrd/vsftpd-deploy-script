@@ -54,7 +54,7 @@ prompt_nonempty() {
             printf "%s" "$RESULT"
             return 0
         else
-            echo -e "${RED}This field cannot be empty. Press [Ctrl+C] to cancel.${RESET}"
+            echo -e "${RED}This field cannot be empty. Press [Ctrl+C] to cancel.${RESET}" >&2
         fi
     done
 }
@@ -72,17 +72,17 @@ prompt_password() {
     local USERNAME="$1"
     local generated_password=""
     
-    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}"
+    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}" >&2
     
     generated_password=$(generate_password)
     
     if [ -n "$generated_password" ]; then
-        echo -e "${GREEN}Generated secure password: ${generated_password}${RESET}"
-        echo
+        echo -e "${GREEN}Generated secure password: ${generated_password}${RESET}" >&2
+        echo >&2
         PROMPT_TEXT="Enter password for user '$USERNAME' [press Enter to use generated]: "
     else
-        echo -e "${YELLOW}pwgen is not available. Please enter password manually.${RESET}"
-        echo
+        echo -e "${YELLOW}pwgen is not available. Please enter password manually.${RESET}" >&2
+        echo >&2
         PROMPT_TEXT="Enter password for user '$USERNAME': "
     fi
     
@@ -91,40 +91,40 @@ prompt_password() {
         
         if [ -z "$PASSWORD" ] && [ -n "$generated_password" ]; then
             PASSWORD="$generated_password"
-            echo -e "${GREEN}Using generated password.${RESET}"
+            echo -e "${GREEN}Using generated password.${RESET}" >&2
             printf "%s" "$PASSWORD"
             return 0
         elif [ -n "$PASSWORD" ]; then
             printf "%s" "$PASSWORD"
             return 0
         else
-            echo -e "${RED}Password cannot be empty. Press [Ctrl+C] to cancel.${RESET}"
+            echo -e "${RED}Password cannot be empty. Press [Ctrl+C] to cancel.${RESET}" >&2
         fi
     done
 }
 
 prompt_shell() {
     local SHELL_PATH=""
-    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}"
+    echo -e "\n${YELLOW}[Ctrl+C to cancel]${RESET}" >&2
     while true; do
         read -rp "Enter shell for user [default: /bin/false]: " SHELL_PATH
         SHELL_PATH=${SHELL_PATH:-/bin/false}
         
         if grep -q "^$SHELL_PATH$" /etc/shells; then
-            echo -e "${GREEN}Shell set to: $SHELL_PATH${RESET}"
+            echo -e "${GREEN}Shell set to: $SHELL_PATH${RESET}" >&2
             printf "%s" "$SHELL_PATH"
             return 0
         else
-            echo -e "${YELLOW}Shell '$SHELL_PATH' is not registered in /etc/shells.${RESET}"
+            echo -e "${YELLOW}Shell '$SHELL_PATH' is not registered in /etc/shells.${RESET}" >&2
             read -rp "Do you want to add it to /etc/shells? [y/N]: " ADD_SHELL
             
             if [[ "$ADD_SHELL" =~ ^[Yy]$ ]]; then
                 echo "$SHELL_PATH" >> /etc/shells
-                echo -e "${GREEN}Shell '$SHELL_PATH' added to /etc/shells successfully.${RESET}"
+                echo -e "${GREEN}Shell '$SHELL_PATH' added to /etc/shells successfully.${RESET}" >&2
                 printf "%s" "$SHELL_PATH"
                 return 0
             else
-                echo -e "${YELLOW}Please enter a different shell path or press Enter for default.${RESET}"
+                echo -e "${YELLOW}Please enter a different shell path or press Enter for default.${RESET}" >&2
             fi
         fi
     done
