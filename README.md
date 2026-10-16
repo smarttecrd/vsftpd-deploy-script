@@ -11,7 +11,7 @@ This is an interactive Bash script for automated installation, configuration, an
 - **Secure Password Generation**: Automatically generates 18-character secure passwords using `pwgen`
 - **Secure User Management**: Creates FTP users with proper shell validation and `/etc/shells` management
 - **Advanced Shell Validation**: Validates shells against `/etc/shells` and offers to register new ones
-- **Directory Binding**: Mount/bind external folders into user FTP directories
+- **Directory Binding**: Mount/bind external folders into user FTP directories, read-write or **read-only**
 - **Chroot Security**: Users are restricted to their home directories
 - **Backup Configuration**: Automatically backs up original vsftpd configuration
 - **Interactive Interface**: User-friendly menu system with cancellation support (`Ctrl+C`)
@@ -61,8 +61,10 @@ The script provides an interactive menu with the following options:
 
 3. **Mount/Bind Folder into User Home**
    - Binds external directories to user FTP directories
+   - Asks for the access mode: read-write or read-only
    - Automatically updates `/etc/fstab` for persistence
    - Validates source directories before mounting
+   - Skips duplicate `/etc/fstab` entries
 
 4. **Exit**
    - Clean exit with contact information
@@ -92,6 +94,34 @@ The script configures vsftpd with these secure settings:
 - **Directory permissions**: `750` (owner read/write/execute, group read/execute)
 - **Password generation**: Secure 18-character passwords using `pwgen` with uppercase, lowercase, numbers, and symbols
 
+### Read-Only Folders
+
+When binding a folder (menu option 3) the script asks whether the mount should be
+**read-only**. A read-only bind mount lets the FTP user list and download the content
+of the folder, while uploads, renames and deletions are rejected by the kernel with a
+permission error.
+
+Because the Linux kernel ignores `ro` on the first bind mount, the script performs the
+mount in two steps and writes both of them to `/etc/fstab` so the mode survives a reboot:
+
+```
+/data/shared  /srv/ftp/username/shared  none  bind                0 0
+/srv/ftp/username/shared  none  none    bind,remount,ro           0 0
+```
+
+Notes:
+
+- The access mode is chosen per mounted folder, so the same user can have read-write
+  and read-only folders at the same time.
+- The user still needs read and execute permissions on the source folder to browse and
+  download its content.
+- To change the mode of an existing mount, unmount it first, remove its lines from
+  `/etc/fstab`, and run option 3 again:
+
+```bash
+sudo umount /srv/ftp/username/shared
+```
+
 ### Shell Validation
 
 The script includes advanced shell validation that:
@@ -114,6 +144,7 @@ The script automatically generates secure passwords with the following character
 ## 🔐 Security Features
 
 - **Chroot Environment**: Users cannot access files outside their home directory
+- **Read-Only Mounts**: Shared folders can be exposed as read-only, so users can download but not modify them
 - **Shell Validation**: Ensures only valid shells are used
 - **Secure Defaults**: Uses `/bin/false` shell to prevent local login
 - **Strong Password Generation**: Automatically generates 18-character secure passwords

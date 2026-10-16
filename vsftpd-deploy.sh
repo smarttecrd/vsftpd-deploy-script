@@ -7,7 +7,7 @@
 # Steps:
 # 1. Setup and configure vsftpd
 # 2. Add FTP user
-# 3. Mount/bind folder into user FTP home
+# 3. Mount/bind folder into user FTP home (read-write or read-only)
 #
 # Author: SmartTec
 # License: MIT
@@ -57,6 +57,31 @@ prompt_nonempty() {
             echo -e "${RED}This field cannot be empty. Press [Ctrl+C] to cancel.${RESET}" >&2
         fi
     done
+}
+
+prompt_yes_no() {
+    local PROMPT="$1"
+    local DEFAULT="${2:-n}"
+    local ANSWER=""
+    while true; do
+        read -rp "$PROMPT" ANSWER
+        ANSWER=${ANSWER:-$DEFAULT}
+        case "$ANSWER" in
+            [Yy]|[Yy][Ee][Ss]) return 0 ;;
+            [Nn]|[Nn][Oo])     return 1 ;;
+            *) echo -e "${RED}Please answer 'y' or 'n'. Press [Ctrl+C] to cancel.${RESET}" >&2 ;;
+        esac
+    done
+}
+
+add_fstab_entry() {
+    local ENTRY="$1"
+    if grep -qxF "$ENTRY" /etc/fstab; then
+        echo -e "${YELLOW}/etc/fstab already contains: $ENTRY${RESET}"
+    else
+        echo "$ENTRY" >> /etc/fstab
+        echo -e "${GREEN}Added to /etc/fstab: $ENTRY${RESET}"
+    fi
 }
 
 generate_password() {
@@ -240,18 +265,49 @@ mount_bind_folder() {
         fi
     done
 
+    echo
+    echo -e "${YELLOW}Access mode:${RESET}"
+    echo "  read-write : the FTP user can upload, modify and delete files."
+    echo "  read-only  : the FTP user can browse and download, but not change anything."
+    if prompt_yes_no "Mount this folder as read-only? [y/N]: " "n"; then
+        READ_ONLY="yes"
+    else
+        READ_ONLY="no"
+    fi
+
     TARGET="/srv/ftp/$USERNAME/$(basename "$SOURCE")"
     mkdir -p "$TARGET"
 
     if mountpoint -q "$TARGET"; then
         echo -e "${YELLOW}Folder is already mounted.${RESET}"
+        echo -e "${YELLOW}Unmount it first ('umount $TARGET') if you want to change its access mode.${RESET}"
+        pause
         return
     fi
 
     mount --bind "$SOURCE" "$TARGET"
-    echo "$SOURCE $TARGET none bind 0 0" >> /etc/fstab
 
-    echo -e "${GREEN}Mounted '$SOURCE' into '$TARGET'.${RESET}"
+    if [ "$READ_ONLY" = "yes" ]; then
+        if ! mount -o remount,bind,ro "$TARGET"; then
+            echo -e "${RED}Failed to remount '$TARGET' as read-only. Rolling back the mount.${RESET}"
+            umount "$TARGET" || true
+            pause
+            return
+        fi
+    fi
+
+    add_fstab_entry "$SOURCE $TARGET none bind 0 0"
+
+    if [ "$READ_ONLY" = "yes" ]; then
+        # A bind mount ignores 'ro' on the first mount, so a second entry
+        # remounts it read-only right after it is created at boot.
+        add_fstab_entry "$TARGET none none bind,remount,ro 0 0"
+        echo -e "${GREEN}Mounted '$SOURCE' into '$TARGET' as READ-ONLY.${RESET}"
+        echo -e "${YELLOW}Note: '$USERNAME' still needs read and execute permissions on '$SOURCE' to list and download its content.${RESET}"
+    else
+        echo -e "${GREEN}Mounted '$SOURCE' into '$TARGET' as read-write.${RESET}"
+    fi
+
     pause
 }
 
@@ -262,7 +318,7 @@ show_menu() {
         echo "-----------------------------------------"
         echo "1) Setup and Configure vsftpd"
         echo "2) Add FTP User"
-        echo "3) Mount/Bind Folder into User Home"
+        echo "3) Mount/Bind Folder into User Home (read-write or read-only)"
         echo "4) Exit"
         echo
 
